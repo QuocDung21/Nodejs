@@ -13,6 +13,11 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("./emailCtrl");
 
+// Cookie
+
+var cookie = require("cookie");
+
+
 // Create a User ----------------------------------------------
 
 const createUser = asyncHandler(async (req, res) => {
