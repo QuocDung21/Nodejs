@@ -16,23 +16,23 @@ var productSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      required: true,
+      required: false,
     },
     price: {
       type: Number,
-      required: true,
+      required: false,
     },
     category: {
       type: String,
-      required: true,
+      required: false,
     },
     brand: {
       type: String,
-      required: true,
+      required: false,
     },
     quantity: {
       type: Number,
-      required: true,
+      required: false,
     },
     sold: {
       type: Number,
