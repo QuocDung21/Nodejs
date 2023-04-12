@@ -14,18 +14,28 @@ import { Select } from "antd";
 import Dropzone from "react-dropzone";
 import { delImg, uploadImg } from "../features/upload/uploadSlice";
 import { createProducts, resetState } from "../features/product/productSlice";
+// let schema = yup.object().shape({
+//   title: yup.string().required("Title is Required"),
+//   description: yup.string().required("Description is Required"),
+//   price: yup.number().required("Price is Required"),
+//   brand: yup.string().required("Brand is Required"),
+//   category: yup.string().required("Category is Required"),
+//   tags: yup.string().required("Tag is Required"),
+//   color: yup
+//     .array()
+//     .min(1, "Pick at least one color")
+//     .required("Color is Required"),
+//   quantity: yup.number().required("Quantity is Required"),
+// });
 let schema = yup.object().shape({
-  title: yup.string().required("Title is Required"),
-  description: yup.string().required("Description is Required"),
-  price: yup.number().required("Price is Required"),
-  brand: yup.string().required("Brand is Required"),
-  category: yup.string().required("Category is Required"),
-  tags: yup.string().required("Tag is Required"),
-  color: yup
-    .array()
-    .min(1, "Pick at least one color")
-    .required("Color is Required"),
-  quantity: yup.number().required("Quantity is Required"),
+  title: yup.string(),
+  description: yup.string(),
+  price: yup.number(),
+  brand: yup.string(),
+  category: yup.string(),
+  tags: yup.string(),
+  // color: yup.array().min(1, "Pick at least one color"),
+  quantity: yup.number(),
 });
 
 const Addproduct = () => {
@@ -224,6 +234,7 @@ const Addproduct = () => {
           </div>
           <div className="bg-white border-1 p-5 text-center">
             <Dropzone
+              multiple
               onDrop={(acceptedFiles) => dispatch(uploadImg(acceptedFiles))}
             >
               {({ getRootProps, getInputProps }) => (
@@ -244,7 +255,7 @@ const Addproduct = () => {
                 <div className=" position-relative" key={j}>
                   <button
                     type="button"
-                    onClick={() => dispatch(delImg(i.public_id))}
+                    onClick={() => dispatch(delImg(i.asset_id))}
                     className="btn-close position-absolute"
                     style={{ top: "10px", right: "10px" }}
                   ></button>
