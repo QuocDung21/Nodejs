@@ -3,6 +3,7 @@ const Product = require("../models/productModel");
 const Cart = require("../models/cartModel");
 const Coupon = require("../models/couponModel");
 const Order = require("../models/orderModel");
+// const config = require("config");
 const uniqid = require("uniqid");
 
 const asyncHandler = require("express-async-handler");
@@ -12,11 +13,11 @@ const { generateRefreshToken } = require("../config/refreshtoken");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("./emailCtrl");
+const passport = require("passport");
+const axios = require("axios");
 
 // Cookie
-
 var cookie = require("cookie");
-
 
 // Create a User ----------------------------------------------
 
@@ -29,18 +30,61 @@ const createUser = asyncHandler(async (req, res) => {
    * TODO:With the help of email find the user exists or not
    */
   const findUser = await User.findOne({ email: email });
+  if (req.body.googleAccessToken) {
+    const { googleAccessToken } = req.body;
+    axios
+      .get("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: {
+          Authorization: `Bearer ${googleAccessToken}`,
+        },
+      })
+      .then(async (response) => {
+        const firstName = response.data.given_name;
+        const lastName = response.data.family_name;
+        const email = response.data.email;
+        const picture = response.data.picture;
+        const existingUser = await User.findOne({ email });
+        if (existingUser)
+          return res.status(400).json({ message: "User already exist!" });
 
-  if (!findUser) {
-    /**
-     * TODO:if user not found user create a new user
-     */
-    const newUser = await User.create(req.body);
-    res.json(newUser);
+        const result = await User.create({
+          verified: "true",
+          email,
+          firstname: lastName,
+          lastname: firstName,
+          profilePicture: picture,
+        });
+
+        const token = jwt.sign(
+          {
+            email: result.email,
+            id: result._id,
+          },
+          // config.get("JWT_SECRET"),
+          process.env.JWT_SECRET,
+          { expiresIn: "1h" }
+        );
+
+        res.status(200).json({ result, token });
+      })
+      .catch((err) => {
+        console.log(err);
+        res.status(400).json({ message: "Invalid access token!" });
+      });
   } else {
-    /**
-     * TODO:if user found then thow an error: User already exists
-     */
-    throw new Error("User Already Exists");
+    if (!findUser) {
+      /**
+       * TODO:if user not found user create a new user
+       */
+      console.log(req.body);
+      const newUser = await User.create(req.body);
+      res.json(newUser);
+    } else {
+      /**
+       * TODO:if user found then thow an error: User already exists
+       */
+      throw new Error("User Already Exists");
+    }
   }
 });
 
@@ -49,29 +93,93 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   // check if user exists or not
   const findUser = await User.findOne({ email });
-  if (findUser && (await findUser.isPasswordMatched(password))) {
-    const refreshToken = await generateRefreshToken(findUser?._id);
-    const updateuser = await User.findByIdAndUpdate(
-      findUser.id,
-      {
-        refreshToken: refreshToken,
-      },
-      { new: true }
-    );
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      maxAge: 72 * 60 * 60 * 1000,
-    });
-    res.json({
-      _id: findUser?._id,
-      firstname: findUser?.firstname,
-      lastname: findUser?.lastname,
-      email: findUser?.email,
-      mobile: findUser?.mobile,
-      token: generateToken(findUser?._id),
-    });
+  if (req.body.googleAccessToken) {
+    // gogole-auth
+    const { googleAccessToken } = req.body;
+
+    axios
+      .get("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: {
+          Authorization: `Bearer ${googleAccessToken}`,
+        },
+      })
+      .then(async (response) => {
+        const firstname = response.data.given_name;
+        const lastname = response.data.family_name;
+        const email = response.data.email;
+        const picture = response.data.picture;
+
+        const existingUser = await User.findOne({ email });
+
+        if (!existingUser)
+          return res.status(404).json({ message: "User don't exist!" });
+
+        // const refreshToken = await generateRefreshToken(findUser?._id);
+        // const updateuser = await User.findByIdAndUpdate(
+        //   findUser.id,
+        //   {
+        //     refreshToken: refreshToken,
+        //   },
+        //   { new: true }
+        // );
+        // res.cookie("refreshToken", refreshToken, {
+        //   httpOnly: true,
+        //   maxAge: 72 * 60 * 60 * 1000,
+        // });
+        // res.json({
+        //   _id: findUser?._id,
+        //   firstname,
+        //   lastname,
+        //   email: findUser?.email,
+        //   mobile: findUser?.mobile,
+        //   token: generateToken(findUser?._id),
+        //   role: findUser?.role,
+        //   createdAt: findUser?.createdAt,
+        // });
+
+        const token = jwt.sign(
+          {
+            email: existingUser.email,
+            id: existingUser._id,
+          },
+          // config.get("JWT_SECRET"),
+          process.env.JWT_SECRET,
+          { expiresIn: "1h" }
+        );
+
+        res.status(200).json({ result: existingUser, token });
+      })
+      .catch((err) => {
+        console.log(err);
+        res.status(400).json({ message: "Invalid access token!" });
+      });
   } else {
-    throw new Error("Invalid Credentials");
+    if (findUser && (await findUser.isPasswordMatched(password))) {
+      const refreshToken = await generateRefreshToken(findUser?._id);
+      const updateuser = await User.findByIdAndUpdate(
+        findUser.id,
+        {
+          refreshToken: refreshToken,
+        },
+        { new: true }
+      );
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        maxAge: 72 * 60 * 60 * 1000,
+      });
+      res.json({
+        _id: findUser?._id,
+        firstname: findUser?.firstname,
+        lastname: findUser?.lastname,
+        email: findUser?.email,
+        mobile: findUser?.mobile,
+        token: generateToken(findUser?._id),
+        role: findUser?.role,
+        createdAt: findUser?.createdAt,
+      });
+    } else {
+      throw new Error("Invalid Credentials");
+    }
   }
 });
 

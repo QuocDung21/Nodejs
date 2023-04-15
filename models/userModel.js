@@ -19,12 +19,12 @@ var userSchema = new mongoose.Schema(
     },
     mobile: {
       type: String,
-      required: true,
-      unique: true,
+      required: false,
+      // unique: false,
     },
     password: {
       type: String,
-      required: true,
+      required: false,
     },
     role: {
       type: String,
