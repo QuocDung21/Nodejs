@@ -52,7 +52,7 @@ app.use(
 );
 app.use(passport.initialize());
 app.use(passport.session());
-app.use("/", (req, res) => {
+app.get("/", (req, res) => {
   res.json("Api running...");
 });
 app.use("/api/users", authRouter);
