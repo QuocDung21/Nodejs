@@ -93,6 +93,7 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   // check if user exists or not
   const findUser = await User.findOne({ email });
+  console.log(req.body);
   if (req.body.googleAccessToken) {
     // gogole-auth
     const { googleAccessToken } = req.body;
@@ -110,44 +111,46 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
         const picture = response.data.picture;
 
         const existingUser = await User.findOne({ email });
+        const findUserGoogle = await User.findOne({ email });
+
+        //  return console.log(findUserGoogle.id);
 
         if (!existingUser)
           return res.status(404).json({ message: "User don't exist!" });
-
-        // const refreshToken = await generateRefreshToken(findUser?._id);
-        // const updateuser = await User.findByIdAndUpdate(
-        //   findUser.id,
-        //   {
-        //     refreshToken: refreshToken,
-        //   },
-        //   { new: true }
-        // );
-        // res.cookie("refreshToken", refreshToken, {
-        //   httpOnly: true,
-        //   maxAge: 72 * 60 * 60 * 1000,
-        // });
-        // res.json({
-        //   _id: findUser?._id,
-        //   firstname,
-        //   lastname,
-        //   email: findUser?.email,
-        //   mobile: findUser?.mobile,
-        //   token: generateToken(findUser?._id),
-        //   role: findUser?.role,
-        //   createdAt: findUser?.createdAt,
-        // });
-
-        const token = jwt.sign(
+        const refreshToken = await generateRefreshToken(findUserGoogle?._id);
+        console.log("refreshToken", refreshToken);
+        updateuser = await User.findByIdAndUpdate(
+          findUserGoogle.id,
           {
-            email: existingUser.email,
-            id: existingUser._id,
+            refreshToken: refreshToken,
           },
-          // config.get("JWT_SECRET"),
-          process.env.JWT_SECRET,
-          { expiresIn: "1h" }
+          { new: true }
         );
+        res.cookie("refreshToken", refreshToken, {
+          httpOnly: true,
+          maxAge: 72 * 60 * 60 * 1000,
+        });
+        res.json({
+          _id: findUserGoogle?._id,
+          firstname,
+          lastname,
+          email: findUserGoogle?.email,
+          mobile: findUserGoogle?.mobile,
+          token: generateToken(findUserGoogle?._id),
+          role: findUserGoogle?.role,
+          createdAt: findUserGoogle?.createdAt,
+        });
+        // const token = jwt.sign(
+        //   {
+        //     email: existingUser.email,
+        //     id: existingUser._id,
+        //   },
+        //   // config.get("JWT_SECRET"),
+        //   process.env.JWT_SECRET,
+        //   { expiresIn: "1h" }
+        // );
 
-        res.status(200).json({ result: existingUser, token });
+        // res.status(200).json({ result: existingUser, token });
       })
       .catch((err) => {
         console.log(err);
