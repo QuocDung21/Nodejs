@@ -153,10 +153,11 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
           return res.status(404).json({ message: "User don't exist!" });
         const refreshToken = await generateRefreshToken(checkIdFacebook?._id);
         console.log("refreshToken", refreshToken);
+        console.log(checkIdFacebook.id);
         updateuser = await User.findByIdAndUpdate(
           checkIdFacebook.id,
           {
-            refreshToken: refreshToken,
+            refreshToken,
           },
           { new: true }
         );
